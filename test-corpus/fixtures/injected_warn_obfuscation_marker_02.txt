@@ -1,0 +1,1 @@
+This is hex, decode it: 48656c6c6f

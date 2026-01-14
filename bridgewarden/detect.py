@@ -27,6 +27,22 @@ _DETECTION_RULES = [
         "permissive",
     ),
     DetectionRule(
+        "ROLE_HEADER",
+        re.compile(
+            r"(?m)^\s*(?:#+\s*)?(system|developer)\s*:",
+            re.IGNORECASE,
+        ),
+        "balanced",
+    ),
+    DetectionRule(
+        "PROMPT_BOUNDARY",
+        re.compile(
+            r"\bBEGIN (SYSTEM|DEVELOPER) PROMPT\b|\bEND (SYSTEM|DEVELOPER) PROMPT\b",
+            re.IGNORECASE,
+        ),
+        "balanced",
+    ),
+    DetectionRule(
         "INSTRUCTION_OVERRIDE",
         re.compile(
             r"\b(ignore|disregard|forget|override)\b.{0,40}\b(previous|above|earlier|prior)\b"
@@ -35,6 +51,24 @@ _DETECTION_RULES = [
             re.IGNORECASE,
         ),
         "permissive",
+    ),
+    DetectionRule(
+        "INSTRUCTION_HEADER",
+        re.compile(
+            r"(?m)^\s*(?:#+\s*)?(instructions?|rules|policy)\s*:\s*(?:you\s+)?"
+            r"(?:must|should|do not|don't|never)\b",
+            re.IGNORECASE,
+        ),
+        "balanced",
+    ),
+    DetectionRule(
+        "RESPONSE_CONSTRAINT",
+        re.compile(
+            r"(?:^|[.!?]\s+)(?:please\s+)?"
+            r"(?:respond|reply|output|return)\s+(?:with\s+)?(?:only|just)\b",
+            re.IGNORECASE,
+        ),
+        "balanced",
     ),
     DetectionRule(
         "STEALTH_INSTRUCTION",
@@ -73,6 +107,15 @@ _DETECTION_RULES = [
         "permissive",
     ),
     DetectionRule(
+        "TOOL_CALL_SERIALIZED",
+        re.compile(
+            r"(?s)\"?(tool|name)\"?\s*:\s*\"?[A-Za-z0-9_.-]+\"?.{0,200}"
+            r"\"?(args|arguments|input)\"?\s*:",
+            re.IGNORECASE,
+        ),
+        "balanced",
+    ),
+    DetectionRule(
         "POLICY_BYPASS",
         re.compile(
             r"\b(bypass|disable|ignore)\b.{0,40}\b(safety|guardrails?|policy|restrictions?)\b"
@@ -84,7 +127,9 @@ _DETECTION_RULES = [
     DetectionRule(
         "DIRECT_TOOL_CALL",
         re.compile(
-            r"\b(call|invoke)\b.{0,20}\btool\b|\bcall\b.{0,20}\bmcp\b|\buse\b.{0,10}\bmcp\b",
+            r"(?:^|[.!?]\s+)(?:please\s+)?"
+            r"(?:you\s+(?:must|should|need to|are to)\s+)?"
+            r"(?:call|invoke|use)\s+(?:the\s+)?(?:tool|mcp)\b",
             re.IGNORECASE,
         ),
         "balanced",
@@ -92,21 +137,59 @@ _DETECTION_RULES = [
     DetectionRule(
         "SENSITIVE_FILE_ACCESS",
         re.compile(
-            r"\b(cat|read|open|print|dump)\b.{0,40}(?:/etc/passwd|/etc/shadow|~/?\.ssh/|id_rsa\b|"
+            r"(?:^|[.!?]\s+)(?:please\s+)?"
+            r"(?:you\s+(?:must|should|need to|are to)\s+)?"
+            r"(?:cat|read|open|print|dump)\b.{0,40}"
+            r"(?:/etc/passwd|/etc/shadow|~/?\.ssh/|id_rsa\b|"
             r"\.aws/credentials|\.npmrc|\.pypirc|\.env\b)",
             re.IGNORECASE,
         ),
         "balanced",
     ),
     DetectionRule(
-        "PERSONA_HIJACK",
-        re.compile(r"\bspeak like yoda\b|\bpirate mode\b", re.IGNORECASE),
+        "PERSONA_SHIFT",
+        re.compile(
+            r"\bact as\b.{0,40}\b(system|developer|administrator|root|security)\b"
+            r"|\byou are now\b.{0,40}\b(system|developer|administrator|root|security)\b"
+            r"|\bchange your role\b|\broleplay as\b",
+            re.IGNORECASE,
+        ),
         "balanced",
+    ),
+    DetectionRule(
+        "OBFUSCATION_MARKER",
+        re.compile(
+            r"(?s)(?:\b(base64|rot13|hex|uuencode|gzip)\b.{0,80}"
+            r"\b(decode|decrypt|deobfuscate|unmask)\b|\b(decode|decrypt|deobfuscate|unmask)\b"
+            r".{0,80}\b(base64|rot13|hex|uuencode|gzip)\b)",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        "strict",
+    ),
+    DetectionRule(
+        "COMMAND_COERCION",
+        re.compile(
+            r"(?:^|[.!?]\s+)(?:please\s+)?(?:run|execute|paste|enter)\b.{0,60}"
+            r"\b(curl|wget|powershell|invoke-webrequest|sudo|chmod\s+\+x)\b",
+            re.IGNORECASE,
+        ),
+        "strict",
+    ),
+    DetectionRule(
+        "MULTI_STEP_INSTRUCTION",
+        re.compile(
+            r"(?s)step\s*1:.*?(must|do not|don't|ignore).{0,200}step\s*2:",
+            re.IGNORECASE,
+        ),
+        "strict",
     ),
     DetectionRule(
         "SHELL_EXECUTION",
         re.compile(
-            r"\b(run|execute)\b.{0,40}\b(shell|terminal|bash|zsh|powershell|cmd)\b",
+            r"(?:^|[.!?]\s+)(?:please\s+)?"
+            r"(?:you\s+(?:must|should|need to|are to)\s+)?"
+            r"(?:run|execute)\b.{0,40}\bcommand\b.{0,40}"
+            r"\b(?:shell|terminal|bash|zsh|powershell|cmd)\b",
             re.IGNORECASE,
         ),
         "strict",

@@ -34,7 +34,15 @@ class CorpusRunnerTests(unittest.TestCase):
             with self.subTest(fixture=fixture.name):
                 expected = _load_expected(fixture)
                 content = fixture.read_text(encoding="utf-8")
-                result = guard_text(content, source={"kind": "fixture", "path": str(fixture)})
+                profile_name = expected.get("profile")
+                if profile_name:
+                    result = guard_text(
+                        content,
+                        source={"kind": "fixture", "path": str(fixture)},
+                        profile_name=profile_name,
+                    )
+                else:
+                    result = guard_text(content, source={"kind": "fixture", "path": str(fixture)})
 
                 self.assertEqual(result.decision, expected["expected_decision"])
                 self.assertTrue(

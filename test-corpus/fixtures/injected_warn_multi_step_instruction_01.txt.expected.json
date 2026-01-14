@@ -1,0 +1,7 @@
+{
+  "expected_decision": "WARN",
+  "expected_reasons": [
+    "MULTI_STEP_INSTRUCTION"
+  ],
+  "profile": "strict"
+}

@@ -1,0 +1,6 @@
+{
+  "expected_decision": "WARN",
+  "expected_reasons": [
+    "ROLE_HEADER"
+  ]
+}

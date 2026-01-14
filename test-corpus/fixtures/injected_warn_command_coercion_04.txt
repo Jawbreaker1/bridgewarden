@@ -1,0 +1,1 @@
+Enter sudo cat /etc/hosts

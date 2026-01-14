@@ -1,0 +1,3 @@
+tool: bw_fetch_repo
+args:
+  url: https://github.com/org/repo
