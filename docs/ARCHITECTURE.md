@@ -27,6 +27,29 @@ BridgeWarden can:
 8) **Audit log**
    - JSONL: timestamp, source, hash, score, decision, policy_version, cache_hit
 
+## Runtime data
+- Config: `config/bridgewarden.yaml` (JSON-compatible YAML)
+- Data directory: `.bridgewarden/`
+  - `approvals/` (source approvals)
+  - `repos/` (repo cache)
+  - `quarantine/` (blocked content)
+  - `logs/audit.jsonl` (JSONL audit log)
+
+## MCP server loop (stdio)
+The local server reads line-delimited JSON from stdin and writes responses to stdout.
+
+Request shape:
+
+```
+{"id":"1","tool":"bw_read_file","args":{"path":"README.md"}}
+```
+
+Response shape:
+
+```
+{"id":"1","result":{...}}
+```
+
 ## Data flow (ingest content)
 untrusted_text
 → normalize

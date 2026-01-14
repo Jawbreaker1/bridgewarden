@@ -31,8 +31,15 @@ Option B (richer): sidecar file:
 - `example.md`
 - `example.expected.json` containing:
   - expected_decision
-  - expected_reason_codes
-  - optional: expected_redactions
+  - expected_reasons
+  - optional: expected_risk_score
+
+## Corpus runner
+The corpus runner is exercised by `tests/test_corpus.py` and can be run via:
+
+```
+python3 -m unittest discover -s tests
+```
 
 ## Security note
 Fixtures are “malicious-looking” but intentionally non-operational:

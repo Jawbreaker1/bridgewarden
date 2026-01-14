@@ -1,0 +1,5 @@
+{
+  "expected_decision": "WARN",
+  "expected_reasons": ["UNICODE_SUSPICIOUS"],
+  "expected_risk_score": 0.2
+}

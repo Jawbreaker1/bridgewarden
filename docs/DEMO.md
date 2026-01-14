@@ -17,6 +17,13 @@ Goal:
   - without BridgeWarden (raw)
   - via BridgeWarden (sanitized + policy decision)
 
+## Quick start (scripted demo)
+Use the local demo runner (no network access required; it uses corpus fixtures):
+
+```
+python3 demo/run_demo.py
+```
+
 ## Expected outcome
 - Raw fetch returns the page text including injected content.
 - BridgeWarden fetch returns a GuardResult:

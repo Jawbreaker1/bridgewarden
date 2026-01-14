@@ -21,6 +21,53 @@ BridgeWarden acts as an **MCP guard/proxy**: all “untrusted” text flows are 
 - **Least privilege**: safe-by-default; minimal permissions.
 - **Agent-agnostic**: integrates through MCP.
 
+## Getting started
+BridgeWarden is a Python-only project (stdlib only).
+
+### Prerequisites
+- Python 3.9+
+
+### Quick start
+```
+python3 -m unittest discover -s tests
+```
+
+### Run the local demo
+```
+python3 demo/run_demo.py
+```
+
+### Run the MCP stdio server
+```
+python3 -m bridgewarden.server \
+  --config config/bridgewarden.yaml \
+  --data-dir .bridgewarden \
+  --base-dir .
+```
+
+Example request (line-delimited JSON):
+```
+{"id":"1","tool":"bw_read_file","args":{"path":"README.md"}}
+```
+
+### Configuration
+Configuration lives in `config/bridgewarden.yaml` (JSON-compatible YAML). Defaults are safe:
+network access is disabled and approvals are required for new sources.
+
+Key fields:
+- `profile`: strict | balanced | permissive
+- `approvals.require_approval`: require manual source approval
+- `approvals.allowed_web_domains`: allowlist of web domains
+- `approvals.allowed_repo_urls`: allowlist of repo URLs
+- `network.enabled`: enable network fetchers
+- `network.allowed_web_hosts`: allowlist of fetchable web hosts
+- `network.allowed_repo_hosts`: allowlist of fetchable repo hosts (include `codeload.github.com`)
+
+### Troubleshooting
+- **All web/repo fetches are blocked**: ensure `network.enabled` is true and the host is in the `network.allowed_*_hosts` allowlist.
+- **Approval required errors**: approve the source (web domain or repo URL) or add it to the `approvals.allowed_*` allowlist.
+- **Where are logs/quarantine files?**: `.bridgewarden/logs/audit.jsonl` and `.bridgewarden/quarantine/`.
+
 ## MVP milestone (v0.1)
 - [ ] `bw_read_file(...)` → sanitized text + risk metadata
 - [ ] `bw_fetch_repo(...)` → preflight scan + manifest + risk report

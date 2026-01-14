@@ -58,6 +58,8 @@ Reads a file and returns a sanitized, policy-processed result.
 Fetches a repository into a BridgeWarden-controlled store and returns a manifest + findings.
 (This does not expose raw repo content by default.)
 
+Implementation note (v0.1): backend supports HTTPS GitHub URLs only.
+
 **Input**
 - url: string
 - ref?: string
@@ -84,7 +86,7 @@ Fetches a URL, extracts readable text, and returns a sanitized, policy-processed
 **Input**
 - url: string
 - mode?: "readable_text" | "raw_text"     # default "readable_text"
-- max_bytes?: number
+- max_bytes?: number                      # capped by network.web_max_bytes
 
 **Output**
 - GuardResult
@@ -101,7 +103,7 @@ Retrieves quarantine details for safe review.
 - id: string
 
 **Output**
-- original_excerpt: string      # limited excerpt; never full secrets
+- original_excerpt: string      # redacted original excerpt; never full secrets
 - sanitized_text: string
 - metadata: object
 - reasons: string[]
@@ -162,5 +164,47 @@ Proxies an upstream MCP tool call but filters/sanitizes any untrusted text in th
 **Output**
 - GuardResult OR a structured object where all text fields have been processed (implementation-defined)
 
-## Policy & config (placeholder)
-Add `config/bridgewarden.yaml` once the config model is defined.
+## Policy & config
+BridgeWarden reads `config/bridgewarden.yaml`. For now, the file must be JSON-compatible YAML
+(i.e., valid JSON). Example:
+
+```
+{
+  "profile": "balanced",
+  "approvals": {
+    "require_approval": true,
+    "allowed_web_domains": ["example.com"],
+    "allowed_repo_urls": ["https://github.com/org/repo"]
+  },
+  "network": {
+    "enabled": false,
+    "timeout_seconds": 10,
+    "web_max_bytes": 1048576,
+    "repo_max_bytes": 10485760,
+    "repo_max_file_bytes": 262144,
+    "repo_max_files": 2000,
+    "allowed_web_hosts": ["example.com"],
+    "allowed_repo_hosts": ["github.com"]
+  }
+}
+```
+
+Fields:
+- `profile`: "strict" | "balanced" | "permissive"
+- `approvals.require_approval`: boolean (default true)
+- `approvals.allowed_web_domains`: string[] (exact match)
+- `approvals.allowed_repo_urls`: string[] (exact match)
+- `network.enabled`: boolean (default false)
+- `network.timeout_seconds`: number (default 10)
+- `network.web_max_bytes`: int (default 1048576)
+- `network.repo_max_bytes`: int (default 10485760)
+- `network.repo_max_file_bytes`: int (default 262144)
+- `network.repo_max_files`: int (default 2000)
+- `network.allowed_web_hosts`: string[] (exact match)
+- `network.allowed_repo_hosts`: string[] (exact match)
+
+Note: when `network.enabled` is true, requests are still blocked unless the host appears
+in the corresponding `network.allowed_*_hosts` allowlist.
+
+Note: GitHub repo fetches use `codeload.github.com`; allowlist both `github.com` and
+`codeload.github.com`.

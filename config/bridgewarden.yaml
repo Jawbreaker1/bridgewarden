@@ -1,0 +1,18 @@
+{
+  "profile": "balanced",
+  "approvals": {
+    "require_approval": true,
+    "allowed_web_domains": [],
+    "allowed_repo_urls": []
+  },
+  "network": {
+    "enabled": false,
+    "timeout_seconds": 10,
+    "web_max_bytes": 1048576,
+    "repo_max_bytes": 10485760,
+    "repo_max_file_bytes": 262144,
+    "repo_max_files": 2000,
+    "allowed_web_hosts": [],
+    "allowed_repo_hosts": []
+  }
+}

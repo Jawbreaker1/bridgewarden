@@ -18,6 +18,7 @@ Please include:
 - Prevent untrusted text from overriding agent policy or coercing dangerous tool use.
 - Prevent accidental secret exfiltration via redaction + log hygiene.
 - Provide traceability via hashing, audit logs, and policy versioning.
+- This project is defensive. Demo payloads are non-operational and use placeholders. Do not use this project to facilitate unauthorized access or exploitation.
 
 ## Non-Goals (initially)
 - Perfect detection of all attacks (focus on a strong practical baseline).
