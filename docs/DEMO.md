@@ -13,6 +13,7 @@ Goal:
   - *safe* injected instructions (visible and hidden)
   - unicode edge-cases (bidi / zero-width)
   - markdown with role-impersonation patterns
+- A local demo webapp with hidden injections inside CSS/JS/comment blocks
 - A script that compares:
   - without BridgeWarden (raw)
   - via BridgeWarden (sanitized + policy decision)
