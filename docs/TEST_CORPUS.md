@@ -33,6 +33,7 @@ Option B (richer): sidecar file:
   - expected_decision
   - expected_reasons
   - optional: expected_risk_score
+  - optional: profile (e.g., "strict" for strict-only rules)
 
 ## Corpus runner
 The corpus runner is exercised by `tests/test_corpus.py` and can be run via:

@@ -8,12 +8,12 @@ Goal:
 - compare **raw ingestion** vs **guarded ingestion**
 
 ## What the demo includes
-- A local static website with:
+- A local fixture corpus with:
   - benign pages
-  - pages containing *safe* injected instructions (visible and hidden)
+  - *safe* injected instructions (visible and hidden)
   - unicode edge-cases (bidi / zero-width)
   - markdown with role-impersonation patterns
-- Scripts that fetch:
+- A script that compares:
   - without BridgeWarden (raw)
   - via BridgeWarden (sanitized + policy decision)
 
@@ -24,8 +24,20 @@ Use the local demo runner (no network access required; it uses corpus fixtures):
 python3 demo/run_demo.py
 ```
 
+## Local webapp demo
+Run a temporary local web server with safe injection samples:
+
+```
+python3 demo/run_webapp.py
+```
+
+Visit `http://127.0.0.1:8000/` and use the links to test agents.
+Note: `bw_web_fetch` blocks localhost by default for SSRF protection. For guarded
+testing you can either read the files via `bw_read_file` or host the demo on a
+non-local domain and allowlist it in config.
+
 ## Expected outcome
-- Raw fetch returns the page text including injected content.
+- Raw fetch returns the fixture text including injected content.
 - BridgeWarden fetch returns a GuardResult:
   - decision: WARN or BLOCK
   - reasons (e.g., ROLE_IMPERSONATION, STEALTH_INSTRUCTION, PROCESS_SABOTAGE)

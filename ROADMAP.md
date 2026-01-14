@@ -1,18 +1,18 @@
 # Roadmap
 
 ## v0.1 (MVP)
-- [ ] MCP server exposing tools defined in `docs/MCP_API.md`
-- [ ] Pipeline: normalize → sanitize → detect → redact → decide → log
-- [ ] Quarantine: store original + sanitized + metadata (dedupe by content hash)
-- [ ] JSONL audit log with a stable schema
-- [ ] Test suite for pipeline stages + local fixtures
-- [ ] Demo site + scripts to compare “with vs without BridgeWarden”
+- [x] MCP server exposing tools defined in `docs/MCP_API.md`
+- [x] Pipeline: normalize → sanitize → detect → redact → decide → log
+- [x] Quarantine: store original + sanitized + metadata (dedupe by content hash)
+- [x] JSONL audit log with a stable schema
+- [x] Test suite for pipeline stages + local fixtures
+- [x] Demo script + fixtures to compare “with vs without BridgeWarden”
 
 ## v0.2 (Proxy & approvals)
 - [ ] Proxy mode for upstream MCP servers (`bw_tool_proxy`)
 - [ ] Config: allowlist/denylist of upstream tools + argument constraints
-- [ ] Source approval flow (new domain/repo requires approval)
-- [ ] Policy profiles (strict / balanced / permissive)
+- [x] Source approval flow (new domain/repo requires approval)
+- [x] Policy profiles (strict / balanced / permissive)
 
 ## v0.3 (Hardening)
 - [ ] Performance: streaming/slicing for large files

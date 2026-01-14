@@ -129,15 +129,16 @@ or request approval rather than bypassing BridgeWarden.
 ```
 
 ## MVP milestone (v0.1)
-- [ ] `bw_read_file(...)` → sanitized text + risk metadata
-- [ ] `bw_fetch_repo(...)` → preflight scan + manifest + risk report
-- [ ] `bw_web_fetch(...)` → fetch URL → extract text → sanitize + decide
+- [x] `bw_read_file(...)` → sanitized text + risk metadata
+- [x] `bw_fetch_repo(...)` → preflight scan + manifest + risk report
+- [x] `bw_web_fetch(...)` → fetch URL → extract text → sanitize + decide
 - [ ] `bw_tool_proxy(...)` → optional proxy for upstream MCP tools (filtered output)
-- [ ] `bw_quarantine_get(...)` → review blocked content safely
+- [x] `bw_quarantine_get(...)` → review blocked content safely
 
 ## Demo (safe + humorous)
 This repo ships a local demo environment showing “with vs without BridgeWarden”.
 See: [docs/DEMO.md](docs/DEMO.md)
+Quick start: `python3 demo/run_demo.py` or run the local webapp with `python3 demo/run_webapp.py`.
 
 ## Documentation
 - [Threat model](docs/THREAT_MODEL.md)
