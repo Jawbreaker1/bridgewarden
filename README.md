@@ -2,7 +2,7 @@
 
 > “You shall not pass.” — (untrusted context)
 
-**BridgeWarden** is a security gateway for AI coding agents that reduces the risk of *indirect prompt injection* and other hostile text that attempts to steer an agent via README.md, issues, docs, source code comments, or tool output.
+**BridgeWarden** is an MCP-server and a security gateway for AI coding agents that reduces the risk of *indirect prompt injection* and other hostile text that attempts to steer an agent via README.md, issues, docs, source code comments, or tool output.
 
 ## The problem
 AI agents ingest text from many sources (repo files, web pages, tickets, command output). Attackers can hide instructions in that text to:
