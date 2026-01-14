@@ -115,6 +115,19 @@ enabled_tools = ["bw_web_fetch", "bw_fetch_repo", "bw_read_file", "bw_quarantine
 codex mcp list
 ```
 
+Safety note: BridgeWarden only protects text that flows through `bw_*` tools.
+For maximum safety, remove or disable any other MCP servers that can read files,
+fetch web content, or fetch repos so BridgeWarden is the only retrieval path.
+Optionally, add a short prompt reminder to prefer `bw_*` tools for retrieval.
+
+Suggested prompt/policy (add to your agent or team instructions, or paste into
+the start of a session):
+```
+Use only BridgeWarden `bw_*` tools for any file, web, or repo retrieval.
+Do not use other retrieval tools. If content is blocked, use `bw_quarantine_get`
+or request approval rather than bypassing BridgeWarden.
+```
+
 ## MVP milestone (v0.1)
 - [ ] `bw_read_file(...)` → sanitized text + risk metadata
 - [ ] `bw_fetch_repo(...)` → preflight scan + manifest + risk report
