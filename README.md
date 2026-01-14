@@ -68,6 +68,53 @@ Key fields:
 - **Approval required errors**: approve the source (web domain or repo URL) or add it to the `approvals.allowed_*` allowlist.
 - **Where are logs/quarantine files?**: `.bridgewarden/logs/audit.jsonl` and `.bridgewarden/quarantine/`.
 
+### CodexCLI setup
+BridgeWarden runs as an MCP stdio server.
+
+Manual run:
+```
+python3 -m bridgewarden.server \
+  --config config/bridgewarden.yaml \
+  --data-dir .bridgewarden \
+  --base-dir .
+```
+
+Recommended: configure CodexCLI to launch BridgeWarden automatically via `~/.codex/config.toml`
+using command+args and a fixed cwd so relative paths work:
+
+```
+[mcp_servers.bridgewarden]
+command = "python3"
+args = [
+  "-m", "bridgewarden.server",
+  "--config", "config/bridgewarden.yaml",
+  "--data-dir", ".bridgewarden",
+  "--base-dir", "."
+]
+cwd = "/ABSOLUTE/PATH/TO/bridgewarden-repo"
+enabled_tools = ["bw_web_fetch", "bw_fetch_repo", "bw_read_file", "bw_quarantine_get"]
+```
+
+Verify Codex sees the server:
+- Run: `codex mcp list`
+- If needed, restart Codex after editing the config
+
+Step-by-step via CLI (for first-time MCP setup):
+1) From the repo root, add the server:
+```
+codex mcp add bridgewarden -- python3 -m bridgewarden.server --config config/bridgewarden.yaml --data-dir .bridgewarden --base-dir .
+```
+2) Edit `~/.codex/config.toml` to add a fixed cwd and tool allowlist:
+```
+[mcp_servers.bridgewarden]
+cwd = "/ABSOLUTE/PATH/TO/bridgewarden-repo"
+enabled_tools = ["bw_web_fetch", "bw_fetch_repo", "bw_read_file", "bw_quarantine_get"]
+```
+3) Confirm it is registered:
+```
+codex mcp list
+```
+
 ## MVP milestone (v0.1)
 - [ ] `bw_read_file(...)` → sanitized text + risk metadata
 - [ ] `bw_fetch_repo(...)` → preflight scan + manifest + risk report
