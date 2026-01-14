@@ -36,7 +36,11 @@ def guard_text(
     source_value = source or {"kind": "local"}
     normalized = normalize_text(text)
     sanitized = sanitize_text(normalized.text)
-    reasons = detect_reasons(sanitized, unicode_suspicious=normalized.unicode_suspicious)
+    reasons = detect_reasons(
+        sanitized,
+        unicode_suspicious=normalized.unicode_suspicious,
+        profile_name=profile_name,
+    )
     redacted_text, redactions = redact_secrets(sanitized)
     profile = get_profile(profile_name)
     decision, risk_score = decide(reasons, profile)

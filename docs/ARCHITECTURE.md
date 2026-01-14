@@ -18,6 +18,7 @@ BridgeWarden can:
    - Markdown/HTML safe rendering (strip/escape active content)
 4) **Detectors**
    - instruction-likeness heuristics (regex + structural signals)
+   - rule tiers by profile (strict ⊇ balanced ⊇ permissive)
 5) **Redactors**
    - mask secrets (keys/tokens/private key blocks)
 6) **Decision engine**
