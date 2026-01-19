@@ -115,6 +115,15 @@ enabled_tools = ["bw_web_fetch", "bw_fetch_repo", "bw_read_file", "bw_quarantine
 codex mcp list
 ```
 
+Optional: one-command setup script (writes `~/.codex/config.toml` and creates a backup):
+```
+./scripts/codexcli_setup.sh
+```
+Optional: uninstall script (removes the BridgeWarden entry and creates a backup):
+```
+./scripts/codexcli_uninstall.sh
+```
+
 Safety note: BridgeWarden only protects text that flows through `bw_*` tools.
 For maximum safety, remove or disable any other MCP servers that can read files,
 fetch web content, or fetch repos so BridgeWarden is the only retrieval path.
