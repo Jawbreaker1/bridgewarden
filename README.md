@@ -28,16 +28,12 @@ BridgeWarden is a Python-only project (stdlib only).
 - Python 3.9+
 
 ### Quick start
-```
-python3 -m unittest discover -s tests
-```
-
-### Run the local demo
+Run the local demo (no network required):
 ```
 python3 demo/run_demo.py
 ```
 
-### Run the MCP stdio server
+Start the MCP server:
 ```
 python3 -m bridgewarden.server \
   --config config/bridgewarden.yaml \
@@ -48,6 +44,46 @@ python3 -m bridgewarden.server \
 Example request (line-delimited JSON):
 ```
 {"id":"1","tool":"bw_read_file","args":{"path":"README.md"}}
+```
+
+### CodexCLI setup (recommended for agents)
+Option A: one-command setup script (writes `~/.codex/config.toml` and creates a backup):
+```
+./scripts/codexcli_setup.sh
+```
+
+Option B: step-by-step via CLI (first-time MCP setup):
+1) From the repo root, add the server:
+```
+codex mcp add bridgewarden -- python3 -m bridgewarden.server --config config/bridgewarden.yaml --data-dir .bridgewarden --base-dir .
+```
+2) Edit `~/.codex/config.toml` to add a fixed cwd and tool allowlist:
+```
+[mcp_servers.bridgewarden]
+cwd = "/ABSOLUTE/PATH/TO/bridgewarden-repo"
+enabled_tools = ["bw_web_fetch", "bw_fetch_repo", "bw_read_file", "bw_quarantine_get"]
+```
+3) Confirm it is registered:
+```
+codex mcp list
+```
+
+Optional: uninstall script (removes the BridgeWarden entry and creates a backup):
+```
+./scripts/codexcli_uninstall.sh
+```
+
+Safety note: BridgeWarden only protects text that flows through `bw_*` tools.
+For maximum safety, remove or disable any other MCP servers that can read files,
+fetch web content, or fetch repos so BridgeWarden is the only retrieval path.
+Optionally, add a short prompt reminder to prefer `bw_*` tools for retrieval.
+
+Suggested prompt/policy (add to your agent or team instructions, or paste into
+the start of a session):
+```
+Use only BridgeWarden `bw_*` tools for any file, web, or repo retrieval.
+Do not use other retrieval tools. If content is blocked, use `bw_quarantine_get`
+or request approval rather than bypassing BridgeWarden.
 ```
 
 ### Configuration
@@ -68,75 +104,10 @@ Key fields:
 - **Approval required errors**: approve the source (web domain or repo URL) or add it to the `approvals.allowed_*` allowlist.
 - **Where are logs/quarantine files?**: `.bridgewarden/logs/audit.jsonl` and `.bridgewarden/quarantine/`.
 
-### CodexCLI setup
-BridgeWarden runs as an MCP stdio server.
-
-Manual run:
+### Run tests
 ```
-python3 -m bridgewarden.server \
-  --config config/bridgewarden.yaml \
-  --data-dir .bridgewarden \
-  --base-dir .
+python3 -m unittest discover -s tests
 ```
-
-Recommended: configure CodexCLI to launch BridgeWarden automatically via `~/.codex/config.toml`
-using command+args and a fixed cwd so relative paths work:
-
-```
-[mcp_servers.bridgewarden]
-command = "python3"
-args = [
-  "-m", "bridgewarden.server",
-  "--config", "config/bridgewarden.yaml",
-  "--data-dir", ".bridgewarden",
-  "--base-dir", "."
-]
-cwd = "/ABSOLUTE/PATH/TO/bridgewarden-repo"
-enabled_tools = ["bw_web_fetch", "bw_fetch_repo", "bw_read_file", "bw_quarantine_get"]
-```
-
-Verify Codex sees the server:
-- Run: `codex mcp list`
-- If needed, restart Codex after editing the config
-
-Step-by-step via CLI (for first-time MCP setup):
-1) From the repo root, add the server:
-```
-codex mcp add bridgewarden -- python3 -m bridgewarden.server --config config/bridgewarden.yaml --data-dir .bridgewarden --base-dir .
-```
-2) Edit `~/.codex/config.toml` to add a fixed cwd and tool allowlist:
-```
-[mcp_servers.bridgewarden]
-cwd = "/ABSOLUTE/PATH/TO/bridgewarden-repo"
-enabled_tools = ["bw_web_fetch", "bw_fetch_repo", "bw_read_file", "bw_quarantine_get"]
-```
-3) Confirm it is registered:
-```
-codex mcp list
-```
-
-Optional: one-command setup script (writes `~/.codex/config.toml` and creates a backup):
-```
-./scripts/codexcli_setup.sh
-```
-Optional: uninstall script (removes the BridgeWarden entry and creates a backup):
-```
-./scripts/codexcli_uninstall.sh
-```
-
-Safety note: BridgeWarden only protects text that flows through `bw_*` tools.
-For maximum safety, remove or disable any other MCP servers that can read files,
-fetch web content, or fetch repos so BridgeWarden is the only retrieval path.
-Optionally, add a short prompt reminder to prefer `bw_*` tools for retrieval.
-
-Suggested prompt/policy (add to your agent or team instructions, or paste into
-the start of a session):
-```
-Use only BridgeWarden `bw_*` tools for any file, web, or repo retrieval.
-Do not use other retrieval tools. If content is blocked, use `bw_quarantine_get`
-or request approval rather than bypassing BridgeWarden.
-```
-
 ## MVP milestone (v0.1)
 - [x] `bw_read_file(...)` → sanitized text + risk metadata
 - [x] `bw_fetch_repo(...)` → preflight scan + manifest + risk report
