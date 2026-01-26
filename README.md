@@ -119,12 +119,14 @@ python3 -m unittest discover -s tests
 This repo ships a local demo environment showing “with vs without BridgeWarden”.
 See: [docs/DEMO.md](docs/DEMO.md)
 Quick start: `python3 demo/run_demo.py` or run the local webapp with `python3 demo/run_webapp.py`.
+E2E harness: `./scripts/codex_e2e.py --install --uninstall` (details: `docs/E2E_TESTS.md`).
 
 ## Documentation
 - [Threat model](docs/THREAT_MODEL.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [MCP API](docs/MCP_API.md)
 - [Test corpus](docs/TEST_CORPUS.md)
+- [E2E tests](docs/E2E_TESTS.md)
 
 ## Status
 Early stage (proof-of-concept). See [ROADMAP.md](ROADMAP.md).

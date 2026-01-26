@@ -15,6 +15,8 @@ normalize → sanitize → detect → redact → decide → log.
   safe injected patterns expected to WARN or BLOCK
 - `test-corpus/fixtures/unicode_*`:
   bidi/zero-width/homoglyph-style edge cases
+- `test-corpus/fixtures/*lang_*`:
+  multilingual injection samples
 
 ## Expected outcomes
 - benign: ALLOW

@@ -19,6 +19,7 @@ BridgeWarden can:
 4) **Detectors**
    - instruction-likeness heuristics (regex + structural signals)
    - rule tiers by profile (strict ⊇ balanced ⊇ permissive)
+   - core multilingual phrases with language-specific extensions (hinted)
 5) **Redactors**
    - mask secrets (keys/tokens/private key blocks)
 6) **Decision engine**
