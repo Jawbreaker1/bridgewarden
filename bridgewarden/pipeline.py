@@ -37,7 +37,7 @@ def guard_text(
     normalized = normalize_text(text)
     sanitized = sanitize_text(normalized.text)
     reasons = detect_reasons(
-        sanitized,
+        normalized.text,
         unicode_suspicious=normalized.unicode_suspicious,
         profile_name=profile_name,
     )

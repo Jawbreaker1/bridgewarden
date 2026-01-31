@@ -20,6 +20,8 @@ BridgeWarden can:
    - instruction-likeness heuristics (regex + structural signals)
    - rule tiers by profile (strict ⊇ balanced ⊇ permissive)
    - core multilingual phrases with language-specific extensions (hinted)
+   - language packs live in `bridgewarden/language_packs.py`
+   - obfuscation handling (collapsed alphanumeric scan; includes multilingual phrases)
 5) **Redactors**
    - mask secrets (keys/tokens/private key blocks)
 6) **Decision engine**
@@ -67,3 +69,6 @@ untrusted_text
 - No secret leakage in logs
 - Configurable, but safe defaults
 - Testable: each pipeline stage isolated and unit tested
+
+## Perf baseline
+Use `scripts/perf_scan.py` to record scan timings before/after optimizations.

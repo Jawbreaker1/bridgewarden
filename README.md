@@ -14,6 +14,10 @@ AI agents ingest text from many sources (repo files, web pages, tickets, command
 ## One-sentence solution
 BridgeWarden acts as an **MCP guard/proxy**: all “untrusted” text flows are fetched and processed through a deterministic pipeline before reaching the agent/LLM context.
 
+**Important:** BridgeWarden is **not a complete guarantee** against prompt injection.
+It significantly reduces risk and blocks many common attack patterns, but it does not
+eliminate all possible injections or obfuscations.
+
 ## Design principles
 - **Deterministic first**: normalization, sanitization, heuristics, redaction — without relying on an LLM.
 - **Policy decisions**: ALLOW / WARN / BLOCK (quarantine).
@@ -86,6 +90,43 @@ Do not use other retrieval tools. If content is blocked, use `bw_quarantine_get`
 or request approval rather than bypassing BridgeWarden.
 ```
 
+### Other MCP clients (generic)
+BridgeWarden is a stdio MCP server. For any MCP-capable client, configure a server
+entry with:
+- command: `python3`
+- args: `-m bridgewarden.server --config config/bridgewarden.yaml --data-dir .bridgewarden --base-dir .`
+- cwd: absolute path to this repo (so relative paths resolve)
+- enabled_tools: `bw_web_fetch`, `bw_fetch_repo`, `bw_read_file`, `bw_quarantine_get`
+
+If your client supports multiple MCP servers, make BridgeWarden the only retrieval
+path for file/web/repo access. Restart the client after editing config.
+
+### Claude Code setup (manual)
+Claude Code supports MCP servers. Add BridgeWarden to its MCP configuration and
+use the same command/args/cwd/enabled_tools listed above. The exact file format
+and location can vary by version, so follow Claude Code's MCP config guidance and
+insert a BridgeWarden entry with:
+
+```
+name: bridgewarden
+command: python3
+args:
+  - -m
+  - bridgewarden.server
+  - --config
+  - config/bridgewarden.yaml
+  - --data-dir
+  - .bridgewarden
+  - --base-dir
+  - .
+cwd: /ABSOLUTE/PATH/TO/bridgewarden-repo
+enabled_tools:
+  - bw_web_fetch
+  - bw_fetch_repo
+  - bw_read_file
+  - bw_quarantine_get
+```
+
 ### Configuration
 Configuration lives in `config/bridgewarden.yaml` (JSON-compatible YAML). Defaults are safe:
 network access is disabled and approvals are required for new sources.
@@ -107,6 +148,11 @@ Key fields:
 ### Run tests
 ```
 python3 -m unittest discover -s tests
+```
+
+### Performance baseline
+```
+./scripts/perf_scan.py
 ```
 ## MVP milestone (v0.1)
 - [x] `bw_read_file(...)` → sanitized text + risk metadata
