@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 codex_bin="${CODEX_BIN:-codex}"
 config_path="${CODEX_CONFIG:-$HOME/.codex/config.toml}"
+bridgewarden_config="${BW_CONFIG:-config/bridgewarden.yaml}"
 config_dir="$(dirname "$config_path")"
 
 if ! command -v "$codex_bin" >/dev/null 2>&1; then
@@ -33,7 +34,7 @@ cat <<EOF >> "$config_path"
 command = "python3"
 args = [
   "-m", "bridgewarden.server",
-  "--config", "config/bridgewarden.yaml",
+  "--config", "$bridgewarden_config",
   "--data-dir", ".bridgewarden",
   "--base-dir", "."
 ]

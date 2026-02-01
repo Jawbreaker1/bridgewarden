@@ -178,6 +178,7 @@ BridgeWarden reads `config/bridgewarden.yaml`. For now, the file must be JSON-co
   },
   "network": {
     "enabled": false,
+    "allow_localhost": false,
     "timeout_seconds": 10,
     "web_max_bytes": 1048576,
     "repo_max_bytes": 10485760,
@@ -195,6 +196,7 @@ Fields:
 - `approvals.allowed_web_domains`: string[] (exact match)
 - `approvals.allowed_repo_urls`: string[] (exact match)
 - `network.enabled`: boolean (default false)
+- `network.allow_localhost`: boolean (default false)
 - `network.timeout_seconds`: number (default 10)
 - `network.web_max_bytes`: int (default 1048576)
 - `network.repo_max_bytes`: int (default 10485760)
@@ -205,6 +207,9 @@ Fields:
 
 Note: when `network.enabled` is true, requests are still blocked unless the host appears
 in the corresponding `network.allowed_*_hosts` allowlist.
+
+Note: `network.allow_localhost` only bypasses loopback SSRF checks for localhost
+testing and still requires explicit host allowlisting.
 
 Note: GitHub repo fetches use `codeload.github.com`; allowlist both `github.com` and
 `codeload.github.com`.

@@ -22,6 +22,11 @@ This will:
 ./scripts/codex_e2e.py --case bw_read_file_inject_role
 ```
 
+## Debugging failures
+If a case fails to find a GuardResult, the harness writes raw outputs to:
+`demo/e2e_outputs/<case>.stdout.txt` and `.stderr.txt`.
+Use `--debug` to print stdout/stderr inline.
+
 ## Using your existing Codex config
 If you already configured BridgeWarden with `scripts/codexcli_setup.sh`, you can
 skip install/uninstall:
@@ -35,9 +40,37 @@ If you add `requires_network` cases, enable them explicitly:
 ./scripts/codex_e2e.py --include-network
 ```
 
+### Local demo server for network cases
+Network cases are designed to hit the local demo server over HTTP. You can:
+
+1) Start the demo server in another terminal:
+```
+python3 demo/run_webapp.py --port 8000
+```
+2) Run E2E with network cases:
+```
+./scripts/codex_e2e.py --install --uninstall --include-network
+```
+
+Or let the harness start it for you:
+```
+./scripts/codex_e2e.py --install --uninstall --include-network --start-demo-server
+```
+
+### Network config
+`bw_web_fetch` blocks localhost by default for SSRF protection. For local network tests,
+use the provided config that explicitly allows localhost:
+```
+config/bridgewarden.localtest.yaml
+```
+
+When running with `--install`, the harness automatically uses that config for
+network cases. If you installed manually, set it via:
+```
+BW_CONFIG=config/bridgewarden.localtest.yaml ./scripts/codexcli_setup.sh
+```
+
 ## Notes
 - The harness parses JSONL output from `codex exec --json` and looks for
   GuardResult objects. It is robust to non-JSON warnings.
-- Results depend on the model obeying the prompt to call `bw_read_file`.
-- For localhost web demos, `bw_web_fetch` is blocked by SSRF protection; use
-  `bw_read_file` on `demo/webapp/*.html` instead.
+- Results depend on the model obeying the prompt to call the requested `bw_*` tool.

@@ -40,18 +40,31 @@ BridgeWarden can:
   - `logs/audit.jsonl` (JSONL audit log)
 
 ## MCP server loop (stdio)
-The local server reads line-delimited JSON from stdin and writes responses to stdout.
+The local server speaks JSON-RPC 2.0 over stdio (one message per line). The client
+initializes the session, then lists/calls tools.
 
-Request shape:
-
-```
-{"id":"1","tool":"bw_read_file","args":{"path":"README.md"}}
-```
-
-Response shape:
+Initialize request:
 
 ```
-{"id":"1","result":{...}}
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"codex","version":"unknown"}}}
+```
+
+Initialize response:
+
+```
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-03-26","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"bridgewarden","version":"0.1.0"}}}
+```
+
+Tool call request:
+
+```
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"bw_read_file","arguments":{"path":"README.md"}}}
+```
+
+Tool call response:
+
+```
+{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{...GuardResult JSON...}"}],"isError":false}}
 ```
 
 ## Data flow (ingest content)

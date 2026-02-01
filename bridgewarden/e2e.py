@@ -42,9 +42,27 @@ def _walk(obj: object, results: List[Dict[str, Any]]) -> None:
     if _looks_like_guard_result(obj):
         results.append(obj)
         return
+    if isinstance(obj, str):
+        _maybe_parse_guard_text(obj, results)
+        return
     if isinstance(obj, dict):
         for value in obj.values():
             _walk(value, results)
     elif isinstance(obj, list):
         for item in obj:
             _walk(item, results)
+
+
+def _maybe_parse_guard_text(text: str, results: List[Dict[str, Any]]) -> None:
+    """Attempt to parse GuardResult objects embedded as JSON strings."""
+
+    stripped = text.strip()
+    if not stripped:
+        return
+    if stripped[0] not in "{[":
+        return
+    try:
+        parsed = json.loads(stripped)
+    except json.JSONDecodeError:
+        return
+    _walk(parsed, results)

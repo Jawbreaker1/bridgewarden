@@ -7,11 +7,21 @@ from bridgewarden.server import BridgewardenServer, build_tool_handlers, load_co
 
 
 class MCPServerTests(unittest.TestCase):
-    def test_handle_request_unknown_tool(self) -> None:
+    def test_initialize(self) -> None:
         server = BridgewardenServer({})
-        response = server.handle_request({"id": "1", "tool": "missing", "args": {}})
-        self.assertIn("error", response)
-        self.assertEqual(response["error"]["code"], "UNKNOWN_TOOL")
+        response = server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-03-26",
+                    "clientInfo": {"name": "test", "version": "0.0.0"},
+                },
+            }
+        )
+        self.assertEqual(response["result"]["protocolVersion"], "2025-03-26")
+        self.assertIn("tools", response["result"]["capabilities"])
 
     def test_handle_request_dispatches_tool(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -30,7 +40,34 @@ class MCPServerTests(unittest.TestCase):
             )
             server = BridgewardenServer(build_tool_handlers(context))
             response = server.handle_request(
-                {"id": "2", "tool": "bw_read_file", "args": {"path": "note.txt"}}
+                {
+                    "jsonrpc": "2.0",
+                    "id": "2",
+                    "method": "tools/call",
+                    "params": {"name": "bw_read_file", "arguments": {"path": "note.txt"}},
+                }
             )
             self.assertIn("result", response)
-            self.assertEqual(response["result"]["decision"], "ALLOW")
+            content = response["result"]["content"][0]["text"]
+            guard = json.loads(content)
+            self.assertEqual(guard["decision"], "ALLOW")
+
+    def test_unknown_tool_returns_error_payload(self) -> None:
+        server = BridgewardenServer({})
+        response = server.handle_request(
+            {
+                "jsonrpc": "2.0",
+                "id": "3",
+                "method": "tools/call",
+                "params": {"name": "missing", "arguments": {}},
+            }
+        )
+        self.assertTrue(response["result"]["isError"])
+
+    def test_tools_list(self) -> None:
+        server = BridgewardenServer({"bw_read_file": lambda: None})
+        response = server.handle_request(
+            {"jsonrpc": "2.0", "id": "4", "method": "tools/list", "params": {}}
+        )
+        tools = response["result"]["tools"]
+        self.assertTrue(any(tool["name"] == "bw_read_file" for tool in tools))

@@ -29,6 +29,7 @@ class NetworkPolicy:
     """Controls network access and resource limits."""
 
     enabled: bool = False
+    allow_localhost: bool = False
     timeout_seconds: float = 10.0
     web_max_bytes: int = 1024 * 1024
     repo_max_bytes: int = 10 * 1024 * 1024
@@ -95,6 +96,10 @@ def config_from_dict(data: dict) -> BridgewardenConfig:
     if not isinstance(network_enabled, bool):
         raise ConfigError("network.enabled must be a boolean")
 
+    allow_localhost = network.get("allow_localhost", False)
+    if not isinstance(allow_localhost, bool):
+        raise ConfigError("network.allow_localhost must be a boolean")
+
     timeout_seconds = _as_number(network.get("timeout_seconds", 10.0), "network.timeout_seconds")
     web_max_bytes = _as_int(network.get("web_max_bytes", 1024 * 1024), "network.web_max_bytes")
     repo_max_bytes = _as_int(network.get("repo_max_bytes", 10 * 1024 * 1024), "network.repo_max_bytes")
@@ -114,6 +119,7 @@ def config_from_dict(data: dict) -> BridgewardenConfig:
         ),
         network=NetworkPolicy(
             enabled=network_enabled,
+            allow_localhost=allow_localhost,
             timeout_seconds=timeout_seconds,
             web_max_bytes=web_max_bytes,
             repo_max_bytes=repo_max_bytes,

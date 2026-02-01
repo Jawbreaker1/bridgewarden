@@ -19,3 +19,11 @@ class E2EParserTests(unittest.TestCase):
         lines = ["WARNING: something", "{bad json}"]
         results = extract_guard_results(lines)
         self.assertEqual(results, [])
+
+    def test_extracts_guard_result_from_text(self) -> None:
+        lines = [
+            "{\"type\":\"mcp_tool_call\",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"decision\\\":\\\"BLOCK\\\",\\\"risk_score\\\":0.9,\\\"reasons\\\":[\\\"DATA_EXFILTRATION\\\"],\\\"content_hash\\\":\\\"abc\\\",\\\"sanitized_text\\\":\\\"\\\",\\\"policy_version\\\":\\\"v1\\\"}\"}]}}"
+        ]
+        results = extract_guard_results(lines)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["decision"], "BLOCK")

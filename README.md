@@ -45,9 +45,9 @@ python3 -m bridgewarden.server \
   --base-dir .
 ```
 
-Example request (line-delimited JSON):
+Example request (JSON-RPC 2.0 over stdio):
 ```
-{"id":"1","tool":"bw_read_file","args":{"path":"README.md"}}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"bw_read_file","arguments":{"path":"README.md"}}}
 ```
 
 ### CodexCLI setup (recommended for agents)
@@ -166,6 +166,7 @@ This repo ships a local demo environment showing “with vs without BridgeWarden
 See: [docs/DEMO.md](docs/DEMO.md)
 Quick start: `python3 demo/run_demo.py` or run the local webapp with `python3 demo/run_webapp.py`.
 E2E harness: `./scripts/codex_e2e.py --install --uninstall` (details: `docs/E2E_TESTS.md`).
+Local network E2E cases use `config/bridgewarden.localtest.yaml` and the demo webapp.
 
 ## Documentation
 - [Threat model](docs/THREAT_MODEL.md)

@@ -181,7 +181,9 @@ def bw_read_file(
 
 
 def _is_ssrf_risk(
-    hostname: Optional[str], resolver: Optional[Callable[[str], List[str]]] = None
+    hostname: Optional[str],
+    resolver: Optional[Callable[[str], List[str]]] = None,
+    allow_localhost: bool = False,
 ) -> bool:
     """Detect SSRF risk using hostname checks and DNS resolution."""
 
@@ -189,9 +191,11 @@ def _is_ssrf_risk(
         return True
     normalized = _normalize_host(hostname)
     if normalized in {"localhost", "127.0.0.1", "::1"}:
-        return True
+        return not allow_localhost
     try:
         ip = ipaddress.ip_address(normalized)
+        if allow_localhost and ip.is_loopback:
+            return False
         return _is_private_ip(ip)
     except ValueError:
         resolved = _resolve_ips(normalized, resolver)
@@ -202,6 +206,8 @@ def _is_ssrf_risk(
                 parsed_ip = ipaddress.ip_address(ip)
             except ValueError:
                 return True
+            if allow_localhost and parsed_ip.is_loopback:
+                continue
             if _is_private_ip(parsed_ip):
                 return True
         return False
@@ -265,7 +271,11 @@ def bw_web_fetch(
     if not _host_allowed(config, source["domain"], "web"):
         return _blocked_result("NETWORK_HOST_BLOCKED", source)
 
-    if _is_ssrf_risk(parsed.hostname, resolver=dns_resolver):
+    if _is_ssrf_risk(
+        parsed.hostname,
+        resolver=dns_resolver,
+        allow_localhost=bool(config and config.network.allow_localhost),
+    ):
         return _blocked_result("SSRF_BLOCKED", source)
 
     if _domain_allowed(config, source["domain"]):

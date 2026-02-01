@@ -23,6 +23,7 @@ class ConfigTests(unittest.TestCase):
             },
             "network": {
                 "enabled": True,
+                "allow_localhost": True,
                 "timeout_seconds": 5,
                 "web_max_bytes": 100,
                 "repo_max_bytes": 200,
@@ -42,6 +43,7 @@ class ConfigTests(unittest.TestCase):
                 config.approval_policy.allowed_repo_urls, ["https://github.com/org/repo"]
             )
             self.assertTrue(config.network.enabled)
+            self.assertTrue(config.network.allow_localhost)
             self.assertEqual(config.network.web_max_bytes, 100)
             self.assertEqual(config.network.allowed_repo_hosts, ["github.com"])
 

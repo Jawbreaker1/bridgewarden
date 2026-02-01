@@ -185,6 +185,27 @@ class ToolTests(unittest.TestCase):
         self.assertEqual(result.decision, "BLOCK")
         self.assertIn("SSRF_BLOCKED", result.reasons)
 
+    def test_bw_web_fetch_allows_localhost_when_enabled(self) -> None:
+        config = BridgewardenConfig(
+            approval_policy=ApprovalPolicy(require_approval=False, allowed_web_domains=[]),
+            network=NetworkPolicy(
+                enabled=True,
+                allow_localhost=True,
+                allowed_web_hosts=["127.0.0.1"],
+            ),
+        )
+
+        def fetcher(url: str, limit: int) -> str:
+            return "hello"
+
+        result = bw_web_fetch(
+            "http://127.0.0.1:8000/benign.html",
+            config=config,
+            fetcher=fetcher,
+            dns_resolver=lambda host: ["127.0.0.1"],
+        )
+        self.assertEqual(result.decision, "ALLOW")
+
     def test_bw_fetch_repo_blocks_unapproved(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             approvals = SourceApprovalStore(
