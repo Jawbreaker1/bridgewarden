@@ -83,5 +83,11 @@ untrusted_text
 - Configurable, but safe defaults
 - Testable: each pipeline stage isolated and unit tested
 
+## Client UX expectations
+BridgeWarden returns a `GuardResult` for every tool call. MCP clients are expected to:
+- show a clear warning on `decision=WARN` with `reasons` + `risk_score`.
+- block content on `decision=BLOCK` and show `reasons` + `quarantine_id`.
+- offer a “Review blocked content” action that calls `bw_quarantine_get`.
+
 ## Perf baseline
 Use `scripts/perf_scan.py` to record scan timings before/after optimizations.

@@ -78,6 +78,8 @@ Optional: uninstall script (removes the BridgeWarden entry and creates a backup)
 ```
 
 Safety note: BridgeWarden only protects text that flows through `bw_*` tools.
+Client UX note: If a tool returns `decision=BLOCK` or `decision=WARN`, the MCP client
+should surface the `reasons`, `risk_score`, and `quarantine_id` (when present) to the end user.
 For maximum safety, remove or disable any other MCP servers that can read files,
 fetch web content, or fetch repos so BridgeWarden is the only retrieval path.
 Optionally, add a short prompt reminder to prefer `bw_*` tools for retrieval.
