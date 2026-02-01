@@ -80,6 +80,28 @@ Optional: uninstall script (removes the BridgeWarden entry and creates a backup)
 Safety note: BridgeWarden only protects text that flows through `bw_*` tools.
 Client UX note: If a tool returns `decision=BLOCK` or `decision=WARN`, the MCP client
 should surface the `reasons`, `risk_score`, and `quarantine_id` (when present) to the end user.
+
+### Production config (recommended)
+By default, network access is disabled for safety. In real deployments, you should
+explicitly enable network access and allowlist the domains you rely on.
+
+Example (enable network + allowlist):
+```
+{
+  "approvals": {
+    "require_approval": true,
+    "allowed_web_domains": ["docs.example.com"]
+  },
+  "network": {
+    "enabled": true,
+    "timeout_seconds": 10,
+    "allowed_web_hosts": ["docs.example.com", "github.com", "codeload.github.com"]
+  }
+}
+```
+
+Tip: keep `require_approval=true` so new domains require explicit approval instead
+of silently expanding network access.
 For maximum safety, remove or disable any other MCP servers that can read files,
 fetch web content, or fetch repos so BridgeWarden is the only retrieval path.
 Optionally, add a short prompt reminder to prefer `bw_*` tools for retrieval.
