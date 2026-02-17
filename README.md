@@ -95,13 +95,24 @@ Example (enable network + allowlist):
   "network": {
     "enabled": true,
     "timeout_seconds": 10,
-    "allowed_web_hosts": ["docs.example.com", "github.com", "codeload.github.com"]
+    "allowed_web_hosts": [
+      "docs.example.com",
+      "github.com",
+      "raw.githubusercontent.com",
+      "codeload.github.com",
+      "gitlab.com",
+      "bitbucket.org"
+    ]
   }
 }
 ```
 
 Tip: keep `require_approval=true` so new domains require explicit approval instead
 of silently expanding network access.
+Note: GitHub raw file links are served from `raw.githubusercontent.com`, so it must
+be allowlisted separately.
+Note: GitLab and Bitbucket raw file links stay on `gitlab.com` and `bitbucket.org`
+respectively, but still require allowlisting.
 For maximum safety, remove or disable any other MCP servers that can read files,
 fetch web content, or fetch repos so BridgeWarden is the only retrieval path.
 Optionally, add a short prompt reminder to prefer `bw_*` tools for retrieval.

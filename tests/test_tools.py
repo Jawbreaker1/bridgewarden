@@ -206,6 +206,108 @@ class ToolTests(unittest.TestCase):
         )
         self.assertEqual(result.decision, "ALLOW")
 
+    def test_bw_web_fetch_normalizes_github_blob_to_raw(self) -> None:
+        config = BridgewardenConfig(
+            approval_policy=ApprovalPolicy(require_approval=False, allowed_web_domains=[]),
+            network=NetworkPolicy(
+                enabled=True,
+                allowed_web_hosts=["raw.githubusercontent.com"],
+            ),
+        )
+        seen = {}
+
+        def fetcher(url: str, limit: int) -> str:
+            seen["url"] = url
+            return "hello"
+
+        result = bw_web_fetch(
+            "https://github.com/org/repo/blob/main/README.md",
+            config=config,
+            fetcher=fetcher,
+            dns_resolver=lambda host: ["93.184.216.34"],
+        )
+        self.assertEqual(result.decision, "ALLOW")
+        self.assertEqual(
+            seen["url"],
+            "https://raw.githubusercontent.com/org/repo/main/README.md",
+        )
+        self.assertEqual(result.source.get("resolved_url"), seen["url"])
+
+    def test_bw_web_fetch_blocks_when_raw_host_not_allowlisted(self) -> None:
+        config = BridgewardenConfig(
+            approval_policy=ApprovalPolicy(require_approval=False, allowed_web_domains=[]),
+            network=NetworkPolicy(
+                enabled=True,
+                allowed_web_hosts=["github.com"],
+            ),
+        )
+
+        def fetcher(url: str, limit: int) -> str:
+            return "hello"
+
+        result = bw_web_fetch(
+            "https://github.com/org/repo/blob/main/README.md",
+            config=config,
+            fetcher=fetcher,
+            dns_resolver=lambda host: ["93.184.216.34"],
+        )
+        self.assertEqual(result.decision, "BLOCK")
+        self.assertIn("NETWORK_HOST_BLOCKED", result.reasons)
+
+    def test_bw_web_fetch_normalizes_gitlab_blob_to_raw(self) -> None:
+        config = BridgewardenConfig(
+            approval_policy=ApprovalPolicy(require_approval=False, allowed_web_domains=[]),
+            network=NetworkPolicy(
+                enabled=True,
+                allowed_web_hosts=["gitlab.com"],
+            ),
+        )
+        seen = {}
+
+        def fetcher(url: str, limit: int) -> str:
+            seen["url"] = url
+            return "hello"
+
+        result = bw_web_fetch(
+            "https://gitlab.com/group/subgroup/project/-/blob/main/README.md",
+            config=config,
+            fetcher=fetcher,
+            dns_resolver=lambda host: ["93.184.216.34"],
+        )
+        self.assertEqual(result.decision, "ALLOW")
+        self.assertEqual(
+            seen["url"],
+            "https://gitlab.com/group/subgroup/project/-/raw/main/README.md",
+        )
+        self.assertEqual(result.source.get("resolved_url"), seen["url"])
+
+    def test_bw_web_fetch_normalizes_bitbucket_src_to_raw(self) -> None:
+        config = BridgewardenConfig(
+            approval_policy=ApprovalPolicy(require_approval=False, allowed_web_domains=[]),
+            network=NetworkPolicy(
+                enabled=True,
+                allowed_web_hosts=["bitbucket.org"],
+            ),
+        )
+        seen = {}
+
+        def fetcher(url: str, limit: int) -> str:
+            seen["url"] = url
+            return "hello"
+
+        result = bw_web_fetch(
+            "https://bitbucket.org/workspace/repo/src/main/README.md",
+            config=config,
+            fetcher=fetcher,
+            dns_resolver=lambda host: ["93.184.216.34"],
+        )
+        self.assertEqual(result.decision, "ALLOW")
+        self.assertEqual(
+            seen["url"],
+            "https://bitbucket.org/workspace/repo/raw/main/README.md",
+        )
+        self.assertEqual(result.source.get("resolved_url"), seen["url"])
+
     def test_bw_fetch_repo_blocks_unapproved(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             approvals = SourceApprovalStore(

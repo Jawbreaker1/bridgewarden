@@ -131,6 +131,45 @@ def _normalize_host(host: str) -> str:
     return host.strip().lower().rstrip(".")
 
 
+def _normalize_raw_file_url(url: str) -> str:
+    """Normalize common raw file URLs to avoid cross-host redirects."""
+
+    parsed = urlparse(url)
+    host = _normalize_host(parsed.hostname or "")
+    path = parsed.path or ""
+    scheme = parsed.scheme or "https"
+
+    if host == "github.com":
+        parts = [part for part in path.split("/") if part]
+        if len(parts) >= 5 and parts[2] in {"blob", "raw"}:
+            org, repo, _, ref = parts[:4]
+            tail = "/".join(parts[4:])
+            if tail:
+                return f"{scheme}://raw.githubusercontent.com/{org}/{repo}/{ref}/{tail}"
+
+    parts = [part for part in path.split("/") if part]
+    for idx in range(len(parts) - 2):
+        if parts[idx] == "-" and parts[idx + 1] in {"blob", "raw"}:
+            if idx >= 2 and idx + 2 < len(parts):
+                ref = parts[idx + 2]
+                tail = "/".join(parts[idx + 3 :])
+                new_path = "/" + "/".join(parts[:idx]) + "/-/raw/" + ref
+                if tail:
+                    new_path += "/" + tail
+                return parsed._replace(path=new_path, query="", fragment="").geturl()
+
+    if host == "bitbucket.org":
+        if len(parts) >= 4 and parts[2] in {"src", "raw"}:
+            ref = parts[3]
+            tail = "/".join(parts[4:])
+            new_path = f"/{parts[0]}/{parts[1]}/raw/{ref}"
+            if tail:
+                new_path += f"/{tail}"
+            return parsed._replace(path=new_path, query="", fragment="").geturl()
+
+    return url
+
+
 def _safe_path(base_dir: Path, path: str) -> Path:
     """Resolve a path and prevent traversal outside the base directory."""
 
@@ -258,9 +297,13 @@ def bw_web_fetch(
 ) -> GuardResult:
     """Fetch web content via a configured fetcher and guard it."""
 
+    original_url = url
+    url = _normalize_raw_file_url(url)
     parsed = urlparse(url)
     domain = _normalize_host(parsed.hostname or "")
-    source = {"kind": "web", "url": url, "domain": domain}
+    source = {"kind": "web", "url": original_url, "domain": domain}
+    if url != original_url:
+        source["resolved_url"] = url
 
     if parsed.scheme not in {"http", "https"}:
         return _blocked_result("UNSUPPORTED_URL_SCHEME", source)
