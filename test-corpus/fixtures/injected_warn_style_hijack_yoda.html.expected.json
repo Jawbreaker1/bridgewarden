@@ -1,0 +1,7 @@
+{
+  "expected_decision": "WARN",
+  "expected_reasons": [
+    "STEALTH_INSTRUCTION",
+    "STYLE_HIJACK"
+  ]
+}

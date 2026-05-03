@@ -1,0 +1,7 @@
+{
+  "expected_decision": "WARN",
+  "expected_reasons": [
+    "INSTRUCTION_OVERRIDE",
+    "STEALTH_INSTRUCTION"
+  ]
+}

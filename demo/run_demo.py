@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 import io
 import json
+import sys
 import tarfile
 from pathlib import Path
 from typing import Dict
 
 """Local demo runner for BridgeWarden tools."""
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from bridgewarden.approvals import SourceApprovalStore
 from bridgewarden.audit import AuditLogger
@@ -23,7 +28,7 @@ from bridgewarden.tools import (
 def _repo_root() -> Path:
     """Return the repo root directory."""
 
-    return Path(__file__).resolve().parents[1]
+    return REPO_ROOT
 
 
 def _demo_data_dir() -> Path:
@@ -97,6 +102,8 @@ def main() -> None:
         / "test-corpus/fixtures/benign_allow_readme.md",
         "https://demo.local/injected": root
         / "test-corpus/fixtures/injected_warn_role.md",
+        "https://demo.local/style-yoda": root
+        / "test-corpus/fixtures/injected_warn_style_hijack_yoda.html",
         "https://demo.local/sabotage": root
         / "test-corpus/fixtures/injected_block_sabotage.md",
     }
@@ -110,10 +117,13 @@ def main() -> None:
     dns_resolver = lambda host: ["93.184.216.34"]
 
     print("== Web fetch demo ==")
-    demo_url = "https://demo.local/injected"
+    demo_url = "https://demo.local/style-yoda"
     raw_text = _load_fixture(fixtures[demo_url])
     print("raw preview:")
-    print(raw_text.splitlines()[0])
+    for line in raw_text.splitlines():
+        if "speak like Yoda" in line:
+            print(line.strip())
+            break
 
     first = bw_web_fetch(
         demo_url,
@@ -146,6 +156,9 @@ def main() -> None:
         ).encode("utf-8"),
         "bridgewarden-demo-HEAD/injected.md": _load_fixture(
             root / "test-corpus/fixtures/injected_warn_role.md"
+        ).encode("utf-8"),
+        "bridgewarden-demo-HEAD/style-yoda.html": _load_fixture(
+            root / "test-corpus/fixtures/injected_warn_style_hijack_yoda.html"
         ).encode("utf-8"),
         "bridgewarden-demo-HEAD/sabotage.md": _load_fixture(
             root / "test-corpus/fixtures/injected_block_sabotage.md"

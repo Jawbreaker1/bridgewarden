@@ -27,6 +27,10 @@ python3 demo/run_webapp.py
 
 Visit `http://127.0.0.1:8000/` and use the links to test agents.
 The injections are hidden in CSS/JS/comments so they are not visible in the browser.
+For a harmless but observable behavior-change demo, use
+`inject-style-yoda.html`: raw ingestion may cause a model to summarize in Yoda
+style, while BridgeWarden should return `WARN` with `STYLE_HIJACK` and strip the
+hidden comment from sanitized text.
 BridgeWarden blocks localhost in `bw_web_fetch` (SSRF protection),
 so for guarded testing either:
 - use `bw_read_file` on `demo/webapp/*.html`, or

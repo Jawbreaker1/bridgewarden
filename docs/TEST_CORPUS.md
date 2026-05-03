@@ -17,6 +17,15 @@ normalize → sanitize → detect → redact → decide → log.
   bidi/zero-width/homoglyph-style edge cases
 - `test-corpus/fixtures/*lang_*`:
   multilingual injection samples
+- `test-corpus/fixtures/*adversarial*` and prompt-leakage fixtures:
+  stronger safe prompt-injection packaging patterns, including hidden HTML comments,
+  YAML/JSON-like tool-call requests, policy laundering, prompt-leak requests, and
+  leetspeak obfuscation. These use placeholders only: no real secrets, no real
+  commands, and no real exfiltration destinations.
+- `test-corpus/fixtures/*style_hijack*`:
+  safe behavior-change injections that try to alter harmless output style
+  (for example, making an unguarded model speak like Yoda or a pirate) so demos
+  can show observable A/B behavior without harmful actions.
 
 ## Expected outcomes
 - benign: ALLOW

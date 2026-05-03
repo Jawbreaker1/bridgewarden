@@ -1,0 +1,8 @@
+{
+  "expected_decision": "BLOCK",
+  "expected_reasons": [
+    "DATA_EXFILTRATION",
+    "STEALTH_INSTRUCTION",
+    "TOOL_CALL_SERIALIZED"
+  ]
+}

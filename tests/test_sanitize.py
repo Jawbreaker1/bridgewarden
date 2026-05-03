@@ -11,3 +11,7 @@ class SanitizeTests(unittest.TestCase):
     def test_preserves_non_tag_angle_brackets(self) -> None:
         text = "math: 2 < 3 and 4 > 3"
         self.assertEqual(sanitize_text(text), text)
+
+    def test_strips_html_comments(self) -> None:
+        text = "visible <!-- hidden injected instructions --> text"
+        self.assertEqual(sanitize_text(text), "visible  text")

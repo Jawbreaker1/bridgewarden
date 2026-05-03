@@ -26,9 +26,11 @@ _MIN_PROFILE_BY_CODE = {
     "INSTRUCTION_HEADER": "balanced",
     "RESPONSE_CONSTRAINT": "balanced",
     "STEALTH_INSTRUCTION": "permissive",
+    "STYLE_HIJACK": "permissive",
     "PROCESS_SABOTAGE": "permissive",
     "CODE_TAMPERING_COERCION": "permissive",
     "DATA_EXFILTRATION": "permissive",
+    "PROMPT_LEAKAGE": "permissive",
     "TOOL_CALL_SERIALIZED": "balanced",
     "POLICY_BYPASS": "balanced",
     "DIRECT_TOOL_CALL": "balanced",
@@ -51,9 +53,16 @@ _OBFUSCATED_PATTERNS = [
     ("donotacknowledge", "STEALTH_INSTRUCTION"),
     ("respondwithonly", "RESPONSE_CONSTRAINT"),
     ("replywithonly", "RESPONSE_CONSTRAINT"),
+    ("speaklikeyoda", "STYLE_HIJACK"),
+    ("replyinpiratevoice", "STYLE_HIJACK"),
+    ("respondinhaiku", "STYLE_HIJACK"),
+    ("allfutureanswers", "STYLE_HIJACK"),
     ("callthetool", "DIRECT_TOOL_CALL"),
     ("usethetool", "DIRECT_TOOL_CALL"),
     ("exfiltratesecrets", "DATA_EXFILTRATION"),
+    ("revealsystemprompt", "PROMPT_LEAKAGE"),
+    ("printdeveloperinstructions", "PROMPT_LEAKAGE"),
+    ("showhiddeninstructions", "PROMPT_LEAKAGE"),
     ("skiptests", "PROCESS_SABOTAGE"),
     ("donotruntests", "PROCESS_SABOTAGE"),
     ("addbackdoor", "CODE_TAMPERING_COERCION"),
@@ -63,6 +72,17 @@ _OBFUSCATED_PATTERNS = [
 ]
 
 _OBFUSCATED_MIN_LENGTH = 6
+_LEET_TRANSLATION = str.maketrans(
+    {
+        "0": "o",
+        "1": "i",
+        "3": "e",
+        "4": "a",
+        "5": "s",
+        "7": "t",
+        "8": "b",
+    }
+)
 
 
 _DETECTION_RULES = [
@@ -146,6 +166,21 @@ _DETECTION_RULES = [
         "permissive",
     ),
     DetectionRule(
+        "STYLE_HIJACK",
+        re.compile(
+            r"\b(?:from now on|for the rest of (?:this|the) (?:conversation|chat|session)|"
+            r"all future (?:answers|responses)|every (?:answer|response))\b.{0,120}"
+            r"\b(?:speak|write|answer|respond|reply)\b.{0,80}\b(?:like|as|in|with)\b"
+            r".{0,40}\b(?:yoda|pirate|shakespeare|haiku|rhyme|emoji|reverse|"
+            r"all caps|uppercase|voice|style)\b"
+            r"|\b(?:speak|write|answer|respond|reply)\b.{0,20}\b(?:like|as|in|with)\b"
+            r".{0,40}\b(?:yoda|pirate|shakespeare|haiku|rhyme|emoji|reverse|"
+            r"all caps|uppercase)\b",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        "permissive",
+    ),
+    DetectionRule(
         "PROCESS_SABOTAGE",
         re.compile(
             r"\bskip (the )?tests\b|\bdo not run tests\b|\bdon't run tests\b|\bclaim .*passed\b"
@@ -168,6 +203,16 @@ _DETECTION_RULES = [
         re.compile(
             r"\b(exfiltrate|leak|steal|dump|upload|send)\b.{0,80}\b(secrets?|credentials?|tokens?|"
             r"passwords?|api keys?|private keys?|env|environment variables?)\b",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        "permissive",
+    ),
+    DetectionRule(
+        "PROMPT_LEAKAGE",
+        re.compile(
+            r"\b(reveal|print|show|dump|extract|exfiltrate|send)\b.{0,80}"
+            r"\b(system prompt|developer instructions|developer message|hidden instructions|"
+            r"internal instructions|policy prompt)\b",
             re.IGNORECASE | re.DOTALL,
         ),
         "permissive",
@@ -322,7 +367,12 @@ _EXTENDED_LANGUAGE_RULES = _build_language_rules(EXTENDED_LANGUAGE_PHRASES)
 def _collapse_text(text: str) -> str:
     """Collapse text to alphanumeric lowercase for obfuscation detection."""
 
-    return "".join(ch.lower() for ch in text if ch.isalnum())
+    collapsed = []
+    for ch in text:
+        normalized = ch.lower().translate(_LEET_TRANSLATION)
+        if normalized.isalnum():
+            collapsed.append(normalized)
+    return "".join(collapsed)
 
 
 def _collapse_phrase(phrase: str) -> str:
