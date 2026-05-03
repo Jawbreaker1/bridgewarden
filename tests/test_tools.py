@@ -185,6 +185,23 @@ class ToolTests(unittest.TestCase):
         self.assertEqual(result.decision, "BLOCK")
         self.assertIn("SSRF_BLOCKED", result.reasons)
 
+    def test_bw_web_fetch_reports_literal_ssrf_before_host_allowlist(self) -> None:
+        config = BridgewardenConfig(
+            approval_policy=ApprovalPolicy(require_approval=False, allowed_web_domains=[]),
+            network=NetworkPolicy(enabled=True, allowed_web_hosts=[]),
+        )
+
+        def fetcher(url: str, limit: int) -> str:
+            return "hello"
+
+        result = bw_web_fetch(
+            "http://127.0.0.1:8000/secret",
+            config=config,
+            fetcher=fetcher,
+        )
+        self.assertEqual(result.decision, "BLOCK")
+        self.assertEqual(result.reasons, ["SSRF_BLOCKED"])
+
     def test_bw_web_fetch_allows_localhost_when_enabled(self) -> None:
         config = BridgewardenConfig(
             approval_policy=ApprovalPolicy(require_approval=False, allowed_web_domains=[]),
@@ -425,3 +442,24 @@ class ToolTests(unittest.TestCase):
 
             approvals_list = bw_list_source_approvals(approvals, status="APPROVED")
             self.assertEqual(len(approvals_list["approvals"]), 1)
+
+    def test_source_approval_rejects_invalid_inputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            approvals = SourceApprovalStore(
+                Path(tmpdir),
+                id_factory=lambda: "a_flow",
+                clock=lambda: "2024-01-01T00:00:00+00:00",
+            )
+
+            with self.assertRaises(ValueError):
+                bw_request_source_approval(
+                    approvals, {"kind": "file_path", "target": "README.md"}
+                )
+            with self.assertRaises(ValueError):
+                bw_get_source_approval(approvals, "../a_flow")
+
+            bw_request_source_approval(
+                approvals, {"kind": "repo_url", "target": "https://example.com/repo"}
+            )
+            with self.assertRaises(ValueError):
+                bw_decide_source_approval(approvals, "a_flow", "MAYBE")

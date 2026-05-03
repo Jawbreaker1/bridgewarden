@@ -1,22 +1,33 @@
 """Quarantine storage for blocked content and review excerpts."""
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from .redact import redact_secrets
 
 RECORD_FILENAME = "record.json"
 ORIGINAL_FILENAME = "original.txt"
 SANITIZED_FILENAME = "sanitized.txt"
+_QUARANTINE_ID_RE = re.compile(r"^q_[a-f0-9]{64}$")
 
 
 def build_quarantine_id(content_hash: str) -> str:
     """Create a stable quarantine id from a content hash."""
 
     return f"q_{content_hash}"
+
+
+def _validate_quarantine_id(quarantine_id: str) -> None:
+    """Ensure quarantine ids cannot address paths outside the store."""
+
+    if not isinstance(quarantine_id, str) or not _QUARANTINE_ID_RE.fullmatch(
+        quarantine_id
+    ):
+        raise ValueError("invalid quarantine id")
 
 
 def _excerpt(text: str, limit: int) -> str:
@@ -98,14 +109,17 @@ class QuarantineStore:
     def _record_path(self, quarantine_id: str) -> Path:
         """Path to the quarantine record metadata."""
 
+        _validate_quarantine_id(quarantine_id)
         return self.root / quarantine_id / RECORD_FILENAME
 
     def _original_path(self, quarantine_id: str) -> Path:
         """Path to the original quarantined text."""
 
+        _validate_quarantine_id(quarantine_id)
         return self.root / quarantine_id / ORIGINAL_FILENAME
 
     def _sanitized_path(self, quarantine_id: str) -> Path:
         """Path to the sanitized quarantined text."""
 
+        _validate_quarantine_id(quarantine_id)
         return self.root / quarantine_id / SANITIZED_FILENAME

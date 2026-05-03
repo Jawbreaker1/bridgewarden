@@ -7,3 +7,7 @@ class SanitizeTests(unittest.TestCase):
     def test_strips_html_tags(self) -> None:
         text = "<script>alert(1)</script>ok"
         self.assertEqual(sanitize_text(text), "alert(1)ok")
+
+    def test_preserves_non_tag_angle_brackets(self) -> None:
+        text = "math: 2 < 3 and 4 > 3"
+        self.assertEqual(sanitize_text(text), text)

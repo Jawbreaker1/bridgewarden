@@ -5,8 +5,26 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+from .redact import redact_secrets
 from .types import GuardResult
+
+_SENSITIVE_QUERY_KEYS = {
+    "access_token",
+    "api_key",
+    "apikey",
+    "auth",
+    "authorization",
+    "client_secret",
+    "code",
+    "key",
+    "password",
+    "passwd",
+    "pwd",
+    "secret",
+    "token",
+}
 
 
 @dataclass(frozen=True)
@@ -32,7 +50,7 @@ def build_audit_event(result: GuardResult, timestamp: Optional[str] = None) -> A
     event_time = timestamp or datetime.now(timezone.utc).isoformat()
     return AuditEvent(
         timestamp=event_time,
-        source=result.source,
+        source=_sanitize_source(result.source),
         content_hash=result.content_hash,
         risk_score=result.risk_score,
         decision=result.decision,
@@ -43,6 +61,44 @@ def build_audit_event(result: GuardResult, timestamp: Optional[str] = None) -> A
         quarantine_id=result.quarantine_id,
         approval_id=result.approval_id,
     )
+
+
+def _sanitize_source(source: Dict[str, str]) -> Dict[str, str]:
+    """Redact secret-like values before persisting source metadata."""
+
+    sanitized: Dict[str, str] = {}
+    for key, value in source.items():
+        cleaned = _sanitize_url(value)
+        cleaned, _ = redact_secrets(cleaned)
+        sanitized[key] = cleaned
+    return sanitized
+
+
+def _sanitize_url(value: str) -> str:
+    """Mask sensitive URL query parameter values while preserving source context."""
+
+    parsed = urlparse(value)
+    if not parsed.scheme or not parsed.netloc or not parsed.query:
+        return value
+
+    pairs = parse_qsl(parsed.query, keep_blank_values=True)
+    cleaned_pairs = []
+    for key, item in pairs:
+        if _is_sensitive_query_key(key):
+            cleaned_pairs.append((key, "[REDACTED]"))
+        else:
+            cleaned_pairs.append((key, item))
+    query = urlencode(cleaned_pairs, safe="[]")
+    return urlunparse(parsed._replace(query=query))
+
+
+def _is_sensitive_query_key(key: str) -> bool:
+    """Return whether a query parameter name commonly carries a secret."""
+
+    normalized = key.strip().lower().replace("-", "_")
+    if normalized in _SENSITIVE_QUERY_KEYS:
+        return True
+    return any(marker in normalized for marker in ("token", "secret", "password"))
 
 
 def audit_event_to_json(event: AuditEvent) -> str:

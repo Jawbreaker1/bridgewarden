@@ -27,3 +27,20 @@ class AuditLogTests(unittest.TestCase):
         self.assertEqual(set(data.keys()), expected_keys)
         self.assertNotIn("sanitized_text", data)
         self.assertNotIn("original_text", data)
+
+    def test_audit_event_redacts_sensitive_source_url_query(self) -> None:
+        result = guard_text(
+            "hello",
+            source={
+                "kind": "web",
+                "url": "https://example.com/read?token=super-secret&ok=1",
+            },
+        )
+        event = build_audit_event(result, timestamp="2024-01-01T00:00:00+00:00")
+        data = json.loads(audit_event_to_json(event))
+
+        self.assertEqual(
+            data["source"]["url"],
+            "https://example.com/read?token=[REDACTED]&ok=1",
+        )
+        self.assertNotIn("super-secret", audit_event_to_json(event))

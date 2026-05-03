@@ -204,8 +204,12 @@ def load_context(
     """Load configuration and initialize storage backends."""
 
     resolved_config = load_config(config_path or DEFAULT_CONFIG_PATH)
-    resolved_base = base_dir or Path.cwd()
-    resolved_data_dir = data_dir or resolved_base / DEFAULT_DATA_DIR
+    resolved_base = (base_dir or Path.cwd()).resolve()
+    raw_data_dir = data_dir or DEFAULT_DATA_DIR
+    if raw_data_dir.is_absolute():
+        resolved_data_dir = raw_data_dir
+    else:
+        resolved_data_dir = resolved_base / raw_data_dir
     approvals_dir = resolved_data_dir / "approvals"
     quarantine_dir = resolved_data_dir / "quarantine"
     logs_dir = resolved_data_dir / "logs"
@@ -267,6 +271,7 @@ def build_tool_handlers(context: BridgewardenContext) -> Dict[str, Callable[...,
             approvals=context.approvals,
             config=context.config,
             fetcher=context.repo_fetcher,
+            audit_logger=context.audit_logger,
         ),
         "bw_quarantine_get": partial(bw_quarantine_get, store=context.quarantine),
         "bw_request_source_approval": partial(bw_request_source_approval, context.approvals),

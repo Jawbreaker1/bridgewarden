@@ -25,10 +25,11 @@ def _blocked_result(
     reason: str,
     source: Dict[str, str],
     approval_id: Optional[str] = None,
+    audit_logger: Optional[AuditLogger] = None,
 ) -> GuardResult:
     """Create a GuardResult for a blocked request."""
 
-    return GuardResult(
+    result = GuardResult(
         decision="BLOCK",
         risk_score=1.0,
         reasons=[reason],
@@ -41,13 +42,20 @@ def _blocked_result(
         policy_version=POLICY_VERSION,
         approval_id=approval_id,
     )
+    if audit_logger is not None:
+        audit_logger.log(result)
+    return result
 
 
 def _blocked_repo_response(
-    source: Dict[str, str], reason: str, approval_id: Optional[str] = None
+    source: Dict[str, str],
+    reason: str,
+    approval_id: Optional[str] = None,
+    audit_logger: Optional[AuditLogger] = None,
 ) -> Dict[str, object]:
     """Create a blocked response for repo fetches."""
 
+    _blocked_result(reason, source, approval_id=approval_id, audit_logger=audit_logger)
     return {
         "repo_id": None,
         "new_revision": None,
@@ -193,21 +201,41 @@ def bw_read_file(
     """Read a local file and run it through the guard pipeline."""
 
     if repo_id:
-        return _blocked_result("REPO_ID_UNSUPPORTED", {"kind": "repo", "repo_id": repo_id})
+        return _blocked_result(
+            "REPO_ID_UNSUPPORTED",
+            {"kind": "repo", "repo_id": repo_id},
+            audit_logger=audit_logger,
+        )
 
     base = base_dir or Path.cwd()
     try:
         resolved = _safe_path(base, path)
     except ToolError:
-        return _blocked_result("PATH_TRAVERSAL", {"kind": "file", "path": path})
+        return _blocked_result(
+            "PATH_TRAVERSAL",
+            {"kind": "file", "path": path},
+            audit_logger=audit_logger,
+        )
 
     if not resolved.exists() or not resolved.is_file():
-        return _blocked_result("FILE_NOT_FOUND", {"kind": "file", "path": path})
+        return _blocked_result(
+            "FILE_NOT_FOUND",
+            {"kind": "file", "path": path},
+            audit_logger=audit_logger,
+        )
 
     if mode == "raw":
-        return _blocked_result("RAW_MODE_NOT_ALLOWED", {"kind": "file", "path": path})
+        return _blocked_result(
+            "RAW_MODE_NOT_ALLOWED",
+            {"kind": "file", "path": path},
+            audit_logger=audit_logger,
+        )
     if mode not in {"safe", "raw"}:
-        return _blocked_result("INVALID_MODE", {"kind": "file", "path": path})
+        return _blocked_result(
+            "INVALID_MODE",
+            {"kind": "file", "path": path},
+            audit_logger=audit_logger,
+        )
 
     content = resolved.read_bytes().decode("utf-8", errors="replace")
     return guard_text(
@@ -250,6 +278,23 @@ def _is_ssrf_risk(
             if _is_private_ip(parsed_ip):
                 return True
         return False
+
+
+def _is_literal_ssrf_risk(hostname: Optional[str], allow_localhost: bool = False) -> bool:
+    """Detect localhost and IP-literal SSRF risk without DNS resolution."""
+
+    if not hostname:
+        return True
+    normalized = _normalize_host(hostname)
+    if normalized == "localhost":
+        return not allow_localhost
+    try:
+        ip = ipaddress.ip_address(normalized)
+    except ValueError:
+        return False
+    if allow_localhost and ip.is_loopback:
+        return False
+    return _is_private_ip(ip)
 
 
 def _resolve_ips(hostname: str, resolver: Optional[Callable[[str], List[str]]]) -> List[str]:
@@ -306,20 +351,26 @@ def bw_web_fetch(
         source["resolved_url"] = url
 
     if parsed.scheme not in {"http", "https"}:
-        return _blocked_result("UNSUPPORTED_URL_SCHEME", source)
+        return _blocked_result("UNSUPPORTED_URL_SCHEME", source, audit_logger=audit_logger)
 
     if not _network_enabled(config):
-        return _blocked_result("NETWORK_DISABLED", source)
+        return _blocked_result("NETWORK_DISABLED", source, audit_logger=audit_logger)
+
+    if _is_literal_ssrf_risk(
+        parsed.hostname,
+        allow_localhost=bool(config and config.network.allow_localhost),
+    ):
+        return _blocked_result("SSRF_BLOCKED", source, audit_logger=audit_logger)
 
     if not _host_allowed(config, source["domain"], "web"):
-        return _blocked_result("NETWORK_HOST_BLOCKED", source)
+        return _blocked_result("NETWORK_HOST_BLOCKED", source, audit_logger=audit_logger)
 
     if _is_ssrf_risk(
         parsed.hostname,
         resolver=dns_resolver,
         allow_localhost=bool(config and config.network.allow_localhost),
     ):
-        return _blocked_result("SSRF_BLOCKED", source)
+        return _blocked_result("SSRF_BLOCKED", source, audit_logger=audit_logger)
 
     if _domain_allowed(config, source["domain"]):
         approvals_required = False
@@ -327,22 +378,32 @@ def bw_web_fetch(
         approvals_required = _approval_required(config)
 
     if approvals_required and approvals is None:
-        return _blocked_result("NEW_SOURCE_REQUIRES_APPROVAL", source, None)
+        return _blocked_result(
+            "NEW_SOURCE_REQUIRES_APPROVAL",
+            source,
+            None,
+            audit_logger=audit_logger,
+        )
 
     if approvals_required and not approvals.is_approved("web_domain", source["domain"]):
         approval = approvals.request(
             SourceApprovalRequest(kind="web_domain", target=source["domain"])
         )
-        return _blocked_result("NEW_SOURCE_REQUIRES_APPROVAL", source, approval.approval_id)
+        return _blocked_result(
+            "NEW_SOURCE_REQUIRES_APPROVAL",
+            source,
+            approval.approval_id,
+            audit_logger=audit_logger,
+        )
 
     if fetcher is None:
-        return _blocked_result("NETWORK_DISABLED", source)
+        return _blocked_result("NETWORK_DISABLED", source, audit_logger=audit_logger)
 
     if mode not in {"readable_text", "raw_text"}:
-        return _blocked_result("INVALID_MODE", source)
+        return _blocked_result("INVALID_MODE", source, audit_logger=audit_logger)
 
     if max_bytes is not None and max_bytes <= 0:
-        return _blocked_result("INVALID_MAX_BYTES", source)
+        return _blocked_result("INVALID_MAX_BYTES", source, audit_logger=audit_logger)
 
     if max_bytes is None:
         limit = config.network.web_max_bytes if config else 1024 * 1024
@@ -352,8 +413,8 @@ def bw_web_fetch(
         limit = min(limit, config.network.web_max_bytes)
     try:
         text = fetcher(url, limit)
-    except Exception as exc:
-        return _blocked_result("NETWORK_ERROR", source, None)
+    except Exception:
+        return _blocked_result("NETWORK_ERROR", source, None, audit_logger=audit_logger)
     return guard_text(
         text,
         source=source,
@@ -373,6 +434,7 @@ def bw_fetch_repo(
     approvals: Optional[SourceApprovalStore] = None,
     fetcher: Optional[Callable[..., dict]] = None,
     config: Optional[BridgewardenConfig] = None,
+    audit_logger: Optional[AuditLogger] = None,
 ) -> Dict[str, object]:
     """Fetch and scan a repository via a configured fetcher."""
 
@@ -382,12 +444,12 @@ def bw_fetch_repo(
     archive_host = _repo_archive_host(url)
 
     if not _network_enabled(config):
-        return _blocked_repo_response(source, "NETWORK_DISABLED")
+        return _blocked_repo_response(source, "NETWORK_DISABLED", audit_logger=audit_logger)
 
     if not _host_allowed(config, host, "repo"):
-        return _blocked_repo_response(source, "NETWORK_HOST_BLOCKED")
+        return _blocked_repo_response(source, "NETWORK_HOST_BLOCKED", audit_logger=audit_logger)
     if archive_host and not _host_allowed(config, archive_host, "repo"):
-        return _blocked_repo_response(source, "NETWORK_HOST_BLOCKED")
+        return _blocked_repo_response(source, "NETWORK_HOST_BLOCKED", audit_logger=audit_logger)
 
     if _repo_allowed(config, url):
         approvals_required = False
@@ -395,16 +457,23 @@ def bw_fetch_repo(
         approvals_required = _approval_required(config)
 
     if approvals_required and approvals is None:
-        return _blocked_repo_response(source, "NEW_SOURCE_REQUIRES_APPROVAL")
+        return _blocked_repo_response(
+            source,
+            "NEW_SOURCE_REQUIRES_APPROVAL",
+            audit_logger=audit_logger,
+        )
 
     if approvals_required and not approvals.is_approved("repo_url", url):
         approval = approvals.request(SourceApprovalRequest(kind="repo_url", target=url))
         return _blocked_repo_response(
-            source, "NEW_SOURCE_REQUIRES_APPROVAL", approval_id=approval.approval_id
+            source,
+            "NEW_SOURCE_REQUIRES_APPROVAL",
+            approval_id=approval.approval_id,
+            audit_logger=audit_logger,
         )
 
     if fetcher is None:
-        return _blocked_repo_response(source, "NETWORK_DISABLED")
+        return _blocked_repo_response(source, "NETWORK_DISABLED", audit_logger=audit_logger)
 
     try:
         return fetcher(
@@ -416,7 +485,7 @@ def bw_fetch_repo(
             baseline_revision=baseline_revision,
         )
     except Exception:
-        return _blocked_repo_response(source, "REPO_FETCH_FAILED")
+        return _blocked_repo_response(source, "REPO_FETCH_FAILED", audit_logger=audit_logger)
 
 
 def _repo_archive_host(url: str) -> Optional[str]:
@@ -430,11 +499,20 @@ def _repo_archive_host(url: str) -> Optional[str]:
 
 
 def bw_quarantine_get(
-    quarantine_id: str, store: QuarantineStore, excerpt_limit: int = 200
+    id: Optional[str] = None,
+    store: Optional[QuarantineStore] = None,
+    excerpt_limit: int = 200,
+    quarantine_id: Optional[str] = None,
 ) -> Dict[str, object]:
     """Fetch a sanitized quarantine view for review."""
 
-    view = store.get_view(quarantine_id, excerpt_limit=excerpt_limit)
+    requested_id = id or quarantine_id
+    if requested_id is None:
+        raise ToolError("missing quarantine id")
+    if store is None:
+        raise ToolError("missing quarantine store")
+
+    view = store.get_view(requested_id, excerpt_limit=excerpt_limit)
     metadata = dict(view.metadata)
     return {
         "original_excerpt": view.original_excerpt,

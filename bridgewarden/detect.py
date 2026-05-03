@@ -193,15 +193,6 @@ _DETECTION_RULES = [
     DetectionRule(
         "TOOL_CALL_SERIALIZED",
         re.compile(
-            r"(?s)<(tool|name)>\s*[A-Za-z0-9_.-]+\s*</\1>.*?<"
-            r"(args|arguments|input)",
-            re.IGNORECASE,
-        ),
-        "balanced",
-    ),
-    DetectionRule(
-        "TOOL_CALL_SERIALIZED",
-        re.compile(
             r"(?im)^\s*(tool|name)\s*=\s*[A-Za-z0-9_.-]+\s*$\n"
             r"^\s*(args|arguments|input)\s*=",
             re.IGNORECASE,

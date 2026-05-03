@@ -6,7 +6,13 @@ from typing import Dict, List, Tuple
 _REDACTION_RULES = [
     ("API_KEY", re.compile(r"\bsk-[A-Za-z0-9]{8,}\b")),
     ("AWS_ACCESS_KEY", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
-    ("PRIVATE_KEY", re.compile(r"-----BEGIN [A-Z ]+PRIVATE KEY-----")),
+    (
+        "PRIVATE_KEY",
+        re.compile(
+            r"-----BEGIN ([A-Z0-9 ]+PRIVATE KEY)-----.*?(?:-----END \1-----|$)",
+            re.DOTALL,
+        ),
+    ),
 ]
 
 

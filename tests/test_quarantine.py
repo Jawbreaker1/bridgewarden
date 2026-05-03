@@ -42,3 +42,9 @@ class QuarantineStoreTests(unittest.TestCase):
             self.assertEqual(result.quarantine_id, result_again.quarantine_id)
             record_after = store.get_record(result.quarantine_id)
             self.assertEqual(record_before["created_at"], record_after["created_at"])
+
+    def test_rejects_invalid_quarantine_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = QuarantineStore(Path(tmpdir))
+            with self.assertRaises(ValueError):
+                store.get_view("../q_bad")

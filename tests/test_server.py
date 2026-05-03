@@ -37,6 +37,21 @@ class ServerTests(unittest.TestCase):
             self.assertTrue((tmp_path / "data" / "logs").exists())
             self.assertTrue((tmp_path / "data" / "repos").exists())
 
+    def test_load_context_resolves_relative_data_dir_under_base_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            config_path = tmp_path / "bridgewarden.yaml"
+            config_path.write_text(json.dumps({"profile": "balanced"}), encoding="utf-8")
+
+            context = load_context(
+                config_path=config_path,
+                data_dir=Path("data"),
+                base_dir=tmp_path,
+            )
+
+            self.assertEqual(context.base_dir, tmp_path.resolve())
+            self.assertTrue((tmp_path / "data" / "approvals").exists())
+
     def test_tool_handlers_use_context_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

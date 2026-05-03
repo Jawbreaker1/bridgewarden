@@ -1,11 +1,16 @@
 """Source approval storage for web and repo access."""
 
 import json
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Callable, List, Optional
+
+_ALLOWED_KINDS = {"web_domain", "repo_url", "upstream_mcp_server"}
+_ALLOWED_DECISIONS = {"APPROVED", "DENIED"}
+_APPROVAL_ID_RE = re.compile(r"^a_[A-Za-z0-9_-]+$")
 
 
 @dataclass(frozen=True)
@@ -51,7 +56,10 @@ class SourceApprovalStore:
     def request(self, request: SourceApprovalRequest) -> SourceApprovalStatus:
         """Create a new pending approval request."""
 
+        _validate_kind(request.kind)
+        _validate_target(request.target)
         approval_id = self._id_factory()
+        _validate_approval_id(approval_id)
         status = SourceApprovalStatus(
             approval_id=approval_id,
             kind=request.kind,
@@ -68,6 +76,7 @@ class SourceApprovalStore:
     def get(self, approval_id: str) -> SourceApprovalStatus:
         """Fetch a single approval record by id."""
 
+        _validate_approval_id(approval_id)
         data = json.loads((self.root / f"{approval_id}.json").read_text(encoding="utf-8"))
         return SourceApprovalStatus(**data)
 
@@ -97,6 +106,7 @@ class SourceApprovalStore:
     ) -> SourceApprovalStatus:
         """Approve or deny a pending request."""
 
+        _validate_decision(decision)
         current = self.get(approval_id)
         if current.status != "PENDING":
             return current
@@ -117,6 +127,7 @@ class SourceApprovalStore:
     def is_approved(self, kind: str, target: str) -> bool:
         """Check if a specific target has an approved record."""
 
+        _validate_kind(kind)
         for approval in self.list(status="APPROVED", kind=kind, limit=1000):
             if approval.target == target:
                 return True
@@ -125,5 +136,34 @@ class SourceApprovalStore:
     def _write(self, status: SourceApprovalStatus) -> None:
         """Persist an approval record to disk."""
 
+        _validate_approval_id(status.approval_id)
         data = json.dumps(status.__dict__, sort_keys=True)
         (self.root / f"{status.approval_id}.json").write_text(data, encoding="utf-8")
+
+
+def _validate_approval_id(approval_id: str) -> None:
+    """Ensure approval ids cannot address paths outside the store."""
+
+    if not isinstance(approval_id, str) or not _APPROVAL_ID_RE.fullmatch(approval_id):
+        raise ValueError("invalid approval id")
+
+
+def _validate_kind(kind: str) -> None:
+    """Validate approval source kind."""
+
+    if not isinstance(kind, str) or kind not in _ALLOWED_KINDS:
+        raise ValueError("invalid approval kind")
+
+
+def _validate_target(target: str) -> None:
+    """Validate approval target is present."""
+
+    if not isinstance(target, str) or not target.strip():
+        raise ValueError("approval target must be a non-empty string")
+
+
+def _validate_decision(decision: str) -> None:
+    """Validate approval decision."""
+
+    if not isinstance(decision, str) or decision not in _ALLOWED_DECISIONS:
+        raise ValueError("invalid approval decision")
